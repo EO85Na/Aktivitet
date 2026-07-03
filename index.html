@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matcha önskemålen</title>
+    <title>Önskemål för dagen</title>
     <style>
         :root {
             --bg-color: #fcfaf7;
@@ -86,11 +86,6 @@
         .btn-success { background-color: var(--success-color); color: white; }
         .btn-danger { background-color: var(--danger-color); color: white; }
         .btn-outline { background: transparent; border: 2px solid var(--secondary-color); color: var(--secondary-color); }
-        
-        .btn-messenger {
-            background-color: #0084FF;
-            color: white;
-        }
 
         .category-grid {
             display: flex;
@@ -140,25 +135,19 @@
             font-style: italic;
             margin: 20px 0;
         }
-
-        /* Messenger-ikon i SVG för att matcha originalet */
-        .messenger-icon {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
     </style>
 </head>
 <body>
 
     <div class="container" id="start-screen">
-        <h1>Matcha önskemålen ❤️</h1>
+        <h1>Önskemål för dagen ❤️</h1>
         <p class="subtitle">Välj en kategori för att börja stämma av vad ni vill idag.</p>
         <div class="category-grid">
-            <button class="btn btn-primary" onclick="startaKategori('mat')">🍣 Mat</button>
-            <button class="btn btn-secondary" onclick="startaKategori('aktivitet')">🎬 Aktivitet</button>
-            <button class="btn btn-success" onclick="startaKategori('behov')">🧠 Behov</button>
+            <button class="btn btn-primary" id="btn-kat-mat" onclick="startaKategori('mat')">🍣 Mat</button>
+            <button class="btn btn-secondary" id="btn-kat-aktivitet" onclick="startaKategori('aktivitet')">🎬 Aktivitet</button>
+            <button class="btn btn-success" id="btn-kat-behov" onclick="startaKategori('behov')">🧠 Behov</button>
         </div>
+        <button class="btn btn-outline hidden" style="margin-top: 25px;" id="btn-visa-huvud-klart" onclick="skapaDelaSkarm()">Gå till dela-sidan ➔</button>
     </div>
 
     <div class="container hidden" id="partner-intro-screen">
@@ -183,15 +172,24 @@
         <button class="btn btn-outline" onclick="avbrytOchGaTillbaka()">↩ Avbryt och gå tillbaka</button>
     </div>
 
+    <div class="container hidden" id="category-done-screen">
+        <h1>Kategori klar! ✨</h1>
+        <p class="subtitle">Vill du fortsätta med en annan kategori eller är du färdig?</p>
+        <button class="btn btn-primary" onclick="visaSkarm('start-screen')">Fortsätt med de andra kategorierna</button>
+        <button class="btn btn-outline" onclick="skapaDelaSkarm()">Kopiera svaren direkt</button>
+    </div>
+
+    <div class="container hidden" id="partner-category-done-screen">
+        <h1>Kategori klar! ✨</h1>
+        <p id="partner-done-subtitle" class="subtitle"></p>
+        <button class="btn btn-primary" id="btn-partner-nasta-kat" onclick="startaNastaPartnerKategori()">Rösta på nästa kategori</button>
+        <button class="btn btn-success" id="btn-partner-visa-resultat" onclick="visaResultatSkarm()">Visa resultat</button>
+    </div>
+
     <div class="container hidden" id="share-screen">
         <h1>Klart! 🎉</h1>
-        <p class="subtitle">Nu är dina val sparade. Skicka länken så att din partner kan matcha.</p>
-        
-        <button class="btn btn-messenger" id="btn-messenger">
-            <svg class="messenger-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.14 2 11.25c0 2.91 1.45 5.51 3.71 7.18.19.14.31.36.31.6v2.44a.47.47 0 0 0 .73.39l2.71-1.63c.15-.09.32-.12.49-.08 1.3.36 2.68.56 4.05.56 5.52 0 10-4.14 10-9.25C22 6.14 17.52 2 12 2zm1.03 12.06l-2.6-2.77-5.07 2.77 5.57-5.91 2.66 2.77 5.01-2.77-5.57 5.91z"/></svg>
-            Skicka till din partner
-        </button>
-        <button class="btn btn-outline" id="btn-copy">Kopiera länk</button>
+        <button class="btn btn-primary" id="btn-copy">Kopiera svar</button>
+        <button class="btn btn-outline" onclick="gaTillStart()">Tillbaka</button>
     </div>
 
     <div class="container hidden" id="result-screen">
@@ -204,7 +202,7 @@
         const appData = {
             mat: [
                 { id: "m1", namn: "Sushi", ikon: "🍣" },
-                { id: "m2", namn: "Rekas", ikon: "🍤" },
+                { id: "m2", namn: "Rekas", ikon: "🍔" },
                 { id: "m3", namn: "Hemmalagat", ikon: "🍳" },
                 { id: "m4", namn: "Kinesiskt", ikon: "🥢" },
                 { id: "m5", namn: "Italienskt", ikon: "🍝" },
@@ -222,33 +220,50 @@
                 { id: "a8", namn: "Skogstur", ikon: "🏕️" }
             ],
             behov: [
-                { id: "b1", namn: "Egentid / Vara ifred", ikon: "🧘" },
+                { id: "b1", namn: "Egentid", ikon: "🧘" },
                 { id: "b2", namn: "Närhet & Kramar", ikon: "🤗" },
-                { id: "b3", stroke: "💬", namn: "Prata av mig om dagen", ikon: "💬" },
-                { id: "b4", namn: "Sova / Lägga sig tidigt", ikon: "😴" },
-                { id: "b5", namn: "Trösta / Bli ompysslad", ikon: "🍵" }
+                { id: "b3", namn: "Prata av mig om dagen", ikon: "💬" },
+                { id: "b4", namn: "Lägga sig tidigt", ikon: "😴" },
+                { id: "b5", namn: "Mysa", ikon: "🥰" }
             ]
         };
 
         let valdKategori = "";
         let nuvarandeIndex = 0;
-        let minaJaSvar = [];
-        let partnerJaSvar = null; 
-        let partner2JaSvar = [];
+        
+        // Sparar svar per kategori: { mat: ["m1"], aktivitet: [] }
+        let minaJaSvarAllas = { mat: [], aktivitet: [], behov: [] };
+        let partnerJaSvarAllas = { mat: [], aktivitet: [], behov: [] };
+        
+        // Sparar vilka kategorier som skickats i länken
+        let skickadeKategorier = [];
+        let partnerKategorierAttRosta = [];
+        let partnerNuvarandeKatIndex = 0;
+
         let isPartner2 = false;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const katParam = urlParams.get('kat');
-            const svarParam = urlParams.get('svar');
+            
+            // Kolla om det finns svar i urlen (t.ex ?mat=m1,m2&aktivitet=a1)
+            let hittadeKategorier = [];
+            for (let kat in appData) {
+                let svarParam = urlParams.get(kat);
+                if (svarParam !== null) {
+                    hittadeKategorier.push(kat);
+                    partnerJaSvarAllas[kat] = svarParam === "" ? [] : svarParam.split(",");
+                }
+            }
 
-            if (katParam && svarParam && appData[katParam]) {
-                valdKategori = katParam;
-                partnerJaSvar = svarParam.split(",");
+            if (hittadeKategorier.length > 0) {
                 isPartner2 = true;
+                skickadeKategorier = hittadeKategorier;
+                partnerKategorierAttRosta = [...hittadeKategorier];
+                partnerNuvarandeKatIndex = 0;
+                valdKategori = partnerKategorierAttRosta[partnerNuvarandeKatIndex];
 
                 visaSkarm("partner-intro-screen");
-                document.getElementById("partner-intro-text").innerText = `Din partner har valt kategorin "${katParam.toUpperCase()}" och vill matcha med dig!`;
+                document.getElementById("partner-intro-text").innerText = `Din partner har skickat sina önskemål och vill matcha med dig!`;
             } else {
                 visaSkarm("start-screen");
             }
@@ -258,33 +273,57 @@
             document.getElementById("start-screen").classList.add("hidden");
             document.getElementById("partner-intro-screen").classList.add("hidden");
             document.getElementById("voting-screen").classList.add("hidden");
+            document.getElementById("category-done-screen").classList.add("hidden");
+            document.getElementById("partner-category-done-screen").classList.add("hidden");
             document.getElementById("share-screen").classList.add("hidden");
             document.getElementById("result-screen").classList.add("hidden");
             
             document.getElementById(id).classList.remove("hidden");
+
+            // Uppdatera startskärmens knappar utifrån vad man redan har svarat på
+            if (id === "start-screen" && !isPartner2) {
+                let harSvaratPaNativ = false;
+                for (let kat in minaJaSvarAllas) {
+                    let knapp = document.getElementById(`btn-kat-${kat}`);
+                    // Om man redan kört denna kategori, markera den lite grann eller låt den vara klickbar igen
+                    if (minaJaSvarAllas[kat].length > 0 || localStorage.getItem(`klar_${kat}`)) {
+                        knapp.innerText = "✓ " + knapp.innerText.replace("✓ ", "");
+                        harSvaratPaNativ = true;
+                    }
+                }
+                if (harSvaratPaNativ) {
+                    document.getElementById("btn-visa-huvud-klart").classList.remove("hidden");
+                }
+            }
         }
 
         function startaKategori(kategori) {
             valdKategori = kategori;
             nuvarandeIndex = 0;
-            minaJaSvar = [];
+            minaJaSvarAllas[kategori] = [];
             isPartner2 = false;
             
-            document.getElementById("voting-title").innerText = "Matcha: " + kategori.toUpperCase();
+            document.getElementById("voting-title").innerText = "Matcha: " + valdKategori.toUpperCase();
             visaSkarm("voting-screen");
             visaAlternativ();
         }
 
         function startaPartnerRostning() {
             nuvarandeIndex = 0;
-            partner2JaSvar = [];
+            valdKategori = partnerKategorierAttRosta[partnerNuvarandeKatIndex];
+            partner2JaSvarAllas[valdKategori] = [];
+            
             document.getElementById("voting-title").innerText = "Matcha: " + valdKategori.toUpperCase();
             visaSkarm("voting-screen");
             visaAlternativ();
         }
 
         function avbrytOchGaTillbaka() {
-            gaTillStart();
+            if (isPartner2) {
+                visaSkarm("partner-intro-screen");
+            } else {
+                visaSkarm("start-screen");
+            }
         }
 
         function gaTillStart() {
@@ -298,12 +337,32 @@
                 document.getElementById("card-icon").innerText = lista[nuvarandeIndex].ikon;
                 document.getElementById("card-text").innerText = lista[nuvarandeIndex].namn;
             } else {
+                // Slut på alternativ i denna kategori
                 if (!isPartner2) {
-                    skapaDelaSkarm();
+                    localStorage.setItem(`klar_${valdKategori}`, "true");
+                    visaSkarm("category-done-screen");
                 } else {
-                    visaResultatSkarm();
+                    // Partner 2 klar med denna kategori
+                    partnerNuvarandeKatIndex++;
+                    if (partnerNuvarandeKatIndex < partnerKategorierAttRosta.length) {
+                        // Det finns fler kategorier som partner 1 skickat med
+                        document.getElementById("partner-done-subtitle").innerText = `Du är klar med ${valdKategori.toUpperCase()}. Det finns mer att matcha!`;
+                        document.getElementById("btn-partner-nasta-kat").classList.remove("hidden");
+                        document.getElementById("btn-partner-visa-resultat").classList.add("hidden");
+                        visaSkarm("partner-category-done-screen");
+                    } else {
+                        // Helt klar med allt partner 1 skickade
+                        document.getElementById("partner-done-subtitle").innerText = "Du har svarat på alla kategorier!";
+                        document.getElementById("btn-partner-nasta-kat").classList.add("hidden");
+                        document.getElementById("btn-partner-visa-resultat").classList.remove("hidden");
+                        visaSkarm("partner-category-done-screen");
+                    }
                 }
             }
+        }
+
+        function startaNastaPartnerKategori() {
+            startaPartnerRostning();
         }
 
         function rosta(jaSvar) {
@@ -312,9 +371,9 @@
 
             if (jaSvar) {
                 if (!isPartner2) {
-                    minaJaSvar.push(aktuelltObjekt.id);
+                    minaJaSvarAllas[valdKategori].push(aktuelltObjekt.id);
                 } else {
-                    partner2JaSvar.push(aktuelltObjekt.id);
+                    partner2JaSvarAllas[valdKategori].push(aktuelltObjekt.id);
                 }
             }
 
@@ -324,22 +383,26 @@
 
         function skapaDelaSkarm() {
             visaSkarm("share-screen");
+            
+            // Bygg URL dynamiskt baserat på alla kategorier man har svarat på
             const basUrl = window.location.origin + window.location.pathname;
-            const lank = `${basUrl}?kat=${valdKategori}&svar=${minaJaSvar.join(",")}`;
+            let params = [];
+            
+            let harSvaratPaNgot = false;
+            for (let kat in appData) {
+                if (localStorage.getItem(`klar_${kat}`) === "true" || minaJaSvarAllas[kat].length > 0) {
+                    params.push(`${kat}=${minaJaSvarAllas[kat].join(",")}`);
+                    harSvaratPaNgot = true;
+                }
+            }
 
-            const messengerBtn = document.getElementById("btn-messenger");
-            messengerBtn.onclick = function() {
-                window.location.href = "fb-messenger://share/?link=" + encodeURIComponent(lank);
-                setTimeout(() => {
-                    window.open("https://www.messenger.com", "_blank");
-                }, 1000);
-            };
+            const lank = basUrl + (params.length > 0 ? "?" + params.join("&") : "");
 
             const copyBtn = document.getElementById("btn-copy");
             copyBtn.onclick = function() {
                 navigator.clipboard.writeText(lank).then(() => {
                     copyBtn.innerText = "Kopierad! ✓";
-                    setTimeout(() => { copyBtn.innerText = "Kopiera länk"; }, 2000);
+                    setTimeout(() => { copyBtn.innerText = "Kopiera svar"; }, 2000);
                 });
             };
         }
@@ -349,26 +412,44 @@
             const resultContent = document.getElementById("result-content");
             resultContent.innerHTML = "";
 
-            const matchningar = appData[valdKategori].filter(item => 
-                partnerJaSvar.includes(item.id) && partner2JaSvar.includes(item.id)
-            );
+            let totaltAntalMatchningar = 0;
 
-            if (matchningar.length > 0) {
-                const rubrik = document.createElement("p");
-                rubrik.innerText = "Det blev en matchning på följande:";
-                rubrik.style.marginBottom = "15px";
-                resultContent.appendChild(rubrik);
+            skickadeKategorier.forEach(kat => {
+                const matchningar = appData[kat].filter(item => 
+                    partnerJaSvarAllas[kat].includes(item.id) && partner2JaSvarAllas[kat].includes(item.id)
+                );
 
-                matchningar.forEach(item => {
-                    const div = document.createElement("div");
-                    div.className = "match-item";
-                    div.innerText = `${item.ikon} ${item.namn}`;
-                    resultContent.appendChild(div);
-                });
-            } else {
+                // Skapa en rubrik för kategorin
+                const katRubrik = document.createElement("h2");
+                katRubrik.innerText = kat.toUpperCase();
+                katRubrik.style.marginTop = "20px";
+                katRubrik.style.marginBottom = "10px";
+                katRubrik.style.fontSize = "18px";
+                katRubrik.style.color = "var(--secondary-color)";
+                resultContent.appendChild(katRubrik);
+
+                if (matchningar.length > 0) {
+                    totaltAntalMatchningar += matchningar.length;
+                    matchningar.forEach(item => {
+                        const div = document.createElement("div");
+                        div.className = "match-item";
+                        div.innerText = `${item.ikon} ${item.namn}`;
+                        resultContent.appendChild(div);
+                    });
+                } else {
+                    const p = document.createElement("p");
+                    p.className = "no-match";
+                    p.innerText = "Ingen omedelbar matchning i denna kategori.";
+                    resultContent.appendChild(p);
+                }
+            });
+
+            if (totaltAntalMatchningar === 0) {
                 const p = document.createElement("p");
                 p.className = "no-match";
-                p.innerText = "Ingen omedelbar matchning den här gången. Dags att prata ihop er och kompromissa! ❤️";
+                p.style.fontWeight = "bold";
+                p.style.marginTop = "20px";
+                p.innerText = "Inga omedelbara matchningar idag. Dags att prata ihop er och kompromissa! ❤️";
                 resultContent.appendChild(p);
             }
         }
