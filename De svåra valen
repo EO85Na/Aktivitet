@@ -1,0 +1,361 @@
+html_content = """<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vi idag - Matcha</title>
+    <style>
+        :root {
+            --bg-color: #fcfaf7;
+            --text-color: #333333;
+            --primary-color: #e07a5f;
+            --secondary-color: #3d5a80;
+            --success-color: #2a9d8f;
+            --danger-color: #e63946;
+            --card-bg: #ffffff;
+            --border-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Knapp-stilar */
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--secondary-color); color: var(--secondary-color); }
+
+        /* Kategori-val */
+        .category-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Swipe-kort */
+        .card-container {
+            margin: 40px 0;
+            perspective: 1000px;
+        }
+
+        .item-card {
+            background: #f8f9fa;
+            border: 2px solid #eee;
+            padding: 40px 20px;
+            border-radius: var(--border-radius);
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .card-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .vote-buttons {
+            display: flex;
+            gap: 20px;
+        }
+
+        /* Resultat & Dela */
+        .match-item {
+            background: #e8f5e9;
+            border-left: 5px solid var(--success-color);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: left;
+        }
+
+        .no-match {
+            color: #666;
+            font-style: italic;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="start-screen">
+        <h1>Vi idag - Matcha ❤️</h1>
+        <p class="subtitle">Välj en kategori för att börja stämma av vad ni vill idag.</p>
+        <div class="category-grid">
+            <button class="btn btn-primary" onclick="startaKategori('mat')">🍣 Mat</button>
+            <button class="btn btn-secondary" onclick="startaKategori('aktivitet')">🎬 Aktivitet</button>
+            <button class="btn btn-success" onclick="startaKategori('behov')">🧠 Behov</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="partner-intro-screen">
+        <h1>Partner har skickat!</h1>
+        <p id="partner-intro-text"></p>
+        <button class="btn btn-primary" onclick="startaPartnerRostning()">Börja rösta</button>
+    </div>
+
+    <div class="container hidden" id="voting-screen">
+        <h1 id="voting-title">Kategori</h1>
+        <p id="voting-progress">1 / 5</p>
+        <div class="card-container">
+            <div class="item-card">
+                <span class="card-icon" id="card-icon">🍔</span>
+                <span id="card-text">Alternativ</span>
+            </div>
+        </div>
+        <div class="vote-buttons">
+            <button class="btn btn-danger" onclick="rosta(false)">❌ Nej</button>
+            <button class="btn btn-success" onclick="rosta(true)">✅ Ja</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="share-screen">
+        <h1>Klart! 🎉</h1>
+        <p class="subtitle">Nu är dina val sparade. Skicka länken till din partner via Messenger så att hen kan matcha.</p>
+        <button class="btn btn-primary" id="btn-messenger">Skicka på Messenger</button>
+        <button class="btn btn-outline" style="margin-top: 10px;" id="btn-copy">Kopiera länk</button>
+    </div>
+
+    <div class="container hidden" id="result-screen">
+        <h1>Resultat! 💕</h1>
+        <div id="result-content"></div>
+        <button class="btn btn-outline" style="margin-top: 20px;" onclick="window.location.href = window.location.origin + window.location.pathname">Starta om</button>
+    </div>
+
+    <script>
+        const appData = {
+            mat: [
+                { id: "m1", namn: "Sushi", ikon: "🍣" },
+                { id: "m2", namn: "Rekas", ikon: "🍤" },
+                { id: "m3", namn: "Hemmalagat", ikon: "🍳" },
+                { id: "m4", namn: "Kinesiskt", ikon: "🥢" },
+                { id: "m5", namn: "Italienskt", ikon: "🍝" },
+                { id: "m6", namn: "Falafel", ikon: "🧆" },
+                { id: "m7", namn: "Snacks", ikon: "🍿" }
+            ],
+            aktivitet: [
+                { id: "a1", namn: "Dokumentärkväll", ikon: "🎬" },
+                { id: "a2", namn: "Kort promenad", ikon: "🚶‍♂️" },
+                { id: "a3", namn: "Längre promenad", ikon: "🌲" },
+                { id: "a4", namn: "Kort road trip", ikon: "🚗" },
+                { id: "a5", namn: "Längre road trip", ikon: "🗺️" },
+                { id: "a6", namn: "Bowling", ikon: "🎳" },
+                { id: "a7", namn: "Utekväll", ikon: "🥂" },
+                { id: "a8", namn: "Skogstur", ikon: "🏕️" }
+            ],
+            behov: [
+                { id: "b1", namn: "Egentid / Vara ifred", ikon: "🧘" },
+                { id: "b2", namn: "Närhet & Kramar", ikon: "🤗" },
+                { id: "b3", namn: "Prata av mig om dagen", ikon: "💬" },
+                { id: "b4", namn: "Sova / Lägga sig tidigt", ikon: "😴" },
+                { id: "b5", namn: "Trösta / Bli ompysslad", ikon: "🍵" }
+            ]
+        };
+
+        let valdKategori = "";
+        let nuvarandeIndex = 0;
+        let minaJaSvar = [];
+        let partnerJaSvar = null; // Kommer från URL om man är partner 2
+        let partner2JaSvar = [];
+        let isPartner2 = false;
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const katParam = urlParams.get('kat');
+            const svarParam = urlParams.get('svar');
+
+            if (katParam && svarParam && appData[katParam]) {
+                valdKategori = katParam;
+                partnerJaSvar = svarParam.split(",");
+                isPartner2 = true;
+
+                visaSkarm("partner-intro-screen");
+                document.getElementById("partner-intro-text").innerText = `Din partner har valt kategorin "${katParam.toUpperCase()}" och vill matcha med dig!`;
+            } else {
+                visaSkarm("start-screen");
+            }
+        };
+
+        function visaSkarm(id) {
+            document.getElementById("start-screen").classList.add("hidden");
+            document.getElementById("partner-intro-screen").classList.add("hidden");
+            document.getElementById("voting-screen").classList.add("hidden");
+            document.getElementById("share-screen").classList.add("hidden");
+            document.getElementById("result-screen").classList.add("hidden");
+            
+            document.getElementById(id).classList.remove("hidden");
+        }
+
+        function startaKategori(kategori) {
+            valdKategori = kategori;
+            nuvarandeIndex = 0;
+            minaJaSvar = [];
+            isPartner2 = false;
+            
+            document.getElementById("voting-title").innerText = "Matcha: " + kategori.toUpperCase();
+            visaSkarm("voting-screen");
+            visaAlternativ();
+        }
+
+        function startaPartnerRostning() {
+            nuvarandeIndex = 0;
+            partner2JaSvar = [];
+            document.getElementById("voting-title").innerText = "Matcha: " + valdKategori.toUpperCase();
+            visaSkarm("voting-screen");
+            visaAlternativ();
+        }
+
+        function visaAlternativ() {
+            const lista = appData[valdKategori];
+            if (nuvarandeIndex < lista.length) {
+                document.getElementById("voting-progress").innerText = `${nuvarandeIndex + 1} / ${lista.length}`;
+                document.getElementById("card-icon").innerText = lista[nuvarandeIndex].ikon;
+                document.getElementById("card-text").innerText = lista[nuvarandeIndex].namn;
+            } else {
+                // Slut på alternativ
+                if (!isPartner2) {
+                    skapaDelaSkarm();
+                } else {
+                    visaResultatSkarm();
+                }
+            }
+        }
+
+        function rosta(jaSvar) {
+            const lista = appData[valdKategori];
+            const aktuelltObjekt = lista[nuvarandeIndex];
+
+            if (jaSvar) {
+                if (!isPartner2) {
+                    minaJaSvar.push(aktuelltObjekt.id);
+                } else {
+                    partner2JaSvar.push(aktuelltObjekt.id);
+                }
+            }
+
+            nuvarandeIndex++;
+            visaAlternativ();
+        }
+
+        function skapaDelaSkarm() {
+            visaSkarm("share-screen");
+            const basUrl = window.location.origin + window.location.pathname;
+            const lank = `${basUrl}?kat=${valdKategori}&svar=${minaJaSvar.join(",")}`;
+
+            // Messenger-länk-knapp
+            const messengerBtn = document.getElementById("btn-messenger");
+            messengerBtn.onclick = function() {
+                window.location.href = "fb-messenger://share/?link=" + encodeURIComponent(lank);
+                // Fallback om appen inte öppnas automatiskt
+                setTimeout(() => {
+                    window.open("https://www.messenger.com", "_blank");
+                }, 1000);
+            };
+
+            // Kopiera knapp
+            const copyBtn = document.getElementById("btn-copy");
+            copyBtn.onclick = function() {
+                navigator.clipboard.writeText(lank).then(() => {
+                    copyBtn.innerText = "Kopierad! ✓";
+                    setTimeout(() => { copyBtn.innerText = "Kopiera länk"; }, 2000);
+                });
+            };
+        }
+
+        function visaResultatSkarm() {
+            visaSkarm("result-screen");
+            const resultContent = document.getElementById("result-content");
+            resultContent.innerHTML = "";
+
+            // Hitta gemensamma svar (matchningar)
+            const matchningar = appData[valdKategori].filter(item => 
+                partnerJaSvar.includes(item.id) && partner2JaSvar.includes(item.id)
+            );
+
+            if (matchningar.length > 0) {
+                const rubrik = document.createElement("p");
+                rubrik.innerText = "Det blev en matchning på följande:";
+                rubrik.style.marginBottom = "15px";
+                resultContent.appendChild(rubrik);
+
+                matchningar.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "match-item";
+                    div.innerText = `${item.ikon} ${item.namn}`;
+                    resultContent.appendChild(div);
+                });
+            } else {
+                const p = document.createElement("p");
+                p.className = "no-match";
+                p.innerText = "Ingen omedelbar matchning den här gången. Dags att prata ihop er och kompromissa! ❤️";
+                resultContent.appendChild(p);
+            }
+        }
+    </script>
+</body>
+</html>"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+print("HTML-fil skapad framgångsrikt.")
